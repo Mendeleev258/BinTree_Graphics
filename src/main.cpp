@@ -33,7 +33,7 @@ int main()
 			// drawing tree
 			if (tree.root != nullptr)
 			{
-				DrawNodePostfix(tree.root, screenWidth / 2, 50, 0);
+				DrawNodePrefix(tree.root, screenWidth / 2, 50, 0);
 			}
 			EndDrawing();
 		}
@@ -138,10 +138,7 @@ void DrawNodePostfix(ptrNODE& node, int x, int y, int level)
 	}
 
 	// draw node
-	if (node->repeat)
-		DrawCircle(x, y, 20, GREEN);
-	else
-		DrawCircle(x, y, 20, BLUE);
+	DrawCircle(x, y, 20, BLUE);
 	DrawText(TextFormat("%c", node->info), x - 5, y - 10, 20, WHITE);
 }
 
