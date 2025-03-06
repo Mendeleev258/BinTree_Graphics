@@ -2,6 +2,7 @@
 #include <fstream>
 #include <sstream>
 #include "raylib.h"
+#include <chrono>
 
 using TInfo = char;
 
@@ -67,6 +68,32 @@ void DrawNodePrefix(ptrNODE& node, int x, int y, int level)
 	}
 }
 
+void DrawNodePostfix(ptrNODE& node, int x, int y, int level)
+{
+	if (node == nullptr) return;
+
+	// left subtree
+	if (node->left != nullptr)
+	{
+		DrawLine(x, y + 20, x - 100, y + 120, WHITE);
+		DrawNodePostfix(node->left, x - 100, y + 120, level + 1);
+	}
+
+	// right subtree
+	if (node->right != nullptr)
+	{
+		DrawLine(x, y + 20, x + 100, y + 120, WHITE);
+		DrawNodePostfix(node->right, x + 100, y + 120, level + 1);
+	}
+
+	// draw node
+	if (node->repeat)
+		DrawCircle(x, y, 20, GREEN);
+	else
+		DrawCircle(x, y, 20, BLUE);
+	DrawText(TextFormat("%c", node->info), x - 5, y - 10, 20, WHITE);
+}
+
 void collectKeys(ptrNODE& root, std::string& keys)
 {
 	if (root)
@@ -80,24 +107,24 @@ void collectKeys(ptrNODE& root, std::string& keys)
 	}
 }
 
+template<typename T, typename Predicat>
+void validation(T& x, Predicat condition, const char* message);
+std::string removeRepeats(const std::string& str);
 
 
 int main()
 {
-	std::ifstream file("data.txt");
-	if (!file)
-		std::cout << "File Error!\n";
-	else
+	bool exitFlag{};
+	const int screenWidth = 800;
+	const int screenHeight = 800;
+	do
 	{
-		// Инициализация окна
-		std::string string = "mbandzala";
-		std::stringstream ss(string);
-		const int screenWidth = 800;
-		const int screenHeight = 800;
-		InitWindow(screenWidth, screenHeight, "Binary Tree Visualization");
+		std::string inputStr{};
+		validation(inputStr, [](std::string x) {return true; }, "Enter your string");
+		std::stringstream ss(inputStr);
 		BinTree tree(ss);
-		tree.removeNode('m');
-		/*tree.removeRepeats();*/
+		InitWindow(screenWidth, screenHeight, "Binary Tree");
+		// tree.removeRepeats();
 		while (!WindowShouldClose())
 		{
 			BeginDrawing();
@@ -106,14 +133,48 @@ int main()
 			// Рисуем дерево
 			if (tree.root != nullptr)
 			{
-				DrawNodePrefix(tree.root, screenWidth / 2, 50, 0);
+				DrawNodePostfix(tree.root, screenWidth / 2, 50, 0);
 			}
-
 			EndDrawing();
 		}
-
 		CloseWindow();
-	}
+		
+		bool next{};
+		validation(next, [](bool x) { return x == true; }, "Enter '1' to delete repeats");
+		InitWindow(screenWidth, screenHeight, "Binary Tree Task");
+
+		auto startTimeTree = std::chrono::high_resolution_clock::now();
+		tree.removeRepeats();
+		auto endTimeTree = std::chrono::high_resolution_clock::now();
+		auto elapsedTimeTree = std::chrono::duration_cast<std::chrono::microseconds>(endTimeTree - startTimeTree).count();
+
+		auto startTimeStr = std::chrono::high_resolution_clock::now();
+		std::string outputStr = removeRepeats(inputStr);
+		auto endTimeStr = std::chrono::high_resolution_clock::now();
+		auto elapsedTimeStr = std::chrono::duration_cast<std::chrono::microseconds>(endTimeStr - startTimeStr).count();
+
+		while (!WindowShouldClose())
+		{
+			BeginDrawing();
+			ClearBackground(BLACK);
+
+			// Рисуем дерево
+			if (tree.root != nullptr)
+			{
+				DrawNodePostfix(tree.root, screenWidth / 2, 50, 0);
+			}
+			EndDrawing();
+		}
+		CloseWindow();
+
+		std::cout << "Your string without repeated chars: " << outputStr << '\n';
+		std::cout << "Tree algorithm time: " << elapsedTimeTree << " ms\n";
+		std::cout << "String algorithm time: " << elapsedTimeStr << " ms\n";
+
+		validation(exitFlag, [](bool x) { return true; }, "Exit? 1 - yes, 0 - no");
+
+	} while (!exitFlag);
+	
 }
 
 
@@ -244,8 +305,8 @@ void BinTree::removeRepeats()
 	std::string keys{};
 	collectKeys(root, keys);
 
-	for (const auto& key : keys)
-		removeNode(key);
+	for (size_t i{}; i < keys.length(); ++i)
+		removeNode(keys[i]);
 }
 
 
@@ -284,3 +345,34 @@ void BinTree::print()
 	if (!root) std::cout << "Tree is empty!\n";
 	else root->print(0);
 }
+
+template<typename T, typename Predicat>
+void validation(T& x, Predicat condition, const char* message)
+{
+	std::cout << message << "\n>>> ";
+	while (!(std::cin >> x && condition(x)))
+	{
+		std::cout << "Input error!" << '\n';
+		std::cin.clear();
+		std::cin.ignore(std::cin.rdbuf()->in_avail());
+		std::cout << message << "\n>>> ";
+	}
+}
+
+std::string removeRepeats(const std::string& str) {
+	std::string result;
+	for (size_t i = 0; i < str.length(); ++i) {
+		bool isRepeat = false;
+		for (size_t j = 0; j < str.length(); ++j) {
+			if (i != j && str[i] == str[j]) {
+				isRepeat = true;
+				break;
+			}
+		}
+		if (!isRepeat) {
+			result += str[i];
+		}
+	}
+	return result;
+}
+
